@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Panel del cumple</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Silkscreen&display=swap">
+<style>
+/* Layout: tablero de una columna en celu; arriba los totales, después el gráfico de llegadas con nombres */
+:root{
+  --bg:#140c17;--card:#21142a;--ink:#fff4fa;--muted:#c9b3cf;--line:#3a2645;
+  --pink:#ff2d8a;--gold:#ffd23f;--sky:#5bcefa;--lav:#b58be0;
+  --display:"Bagel Fat One","Arial Black",system-ui,sans-serif;
+  --body:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Silkscreen",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+.wrap{max-width:44rem;margin:0 auto;padding-block:1.2rem 3rem;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:1rem}
+h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1;text-wrap:balance}
+h1{font-size:clamp(2.2rem,9vw,3.2rem)}
+h2{font-size:1.5rem}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:1rem;display:flex;flex-direction:column;gap:.8rem;min-width:0}
+input{width:100%;font:inherit;color:var(--ink);background:#0e0811;border:2px solid var(--line);border-radius:12px;padding:.8rem 1rem}
+input:focus{outline:none;border-color:var(--pink)}
+.btn{appearance:none;border:0;font:inherit;font-weight:800;cursor:pointer;background:var(--ink);color:var(--bg);border-radius:999px;padding:.8rem 1.2rem;box-shadow:0 4px 0 var(--pink)}
+.btn.sm{padding:.45rem .9rem;font-size:.9rem;box-shadow:0 3px 0 var(--pink)}
+.btn:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.err{color:#ff8fb8;font-weight:600}
+.hint{color:var(--muted);font-size:.88rem}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;flex-wrap:wrap}
+
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem}
+@media (max-width:560px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:.8rem}
+.tile .n{font-family:var(--display);font-size:2.3rem;line-height:1;font-variant-numeric:tabular-nums}
+.tile .k{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.tile.si .n{color:var(--pink)}.tile.tv .n{color:var(--sky)}.tile.mesa .n{color:var(--gold)}
+
+/* gráfico de llegadas: columnas cuya altura es la cantidad de personas, armadas con los nombres */
+.chart-scroll{overflow-x:auto}
+.chart{display:grid;grid-template-columns:repeat(3,minmax(6.5rem,1fr));gap:.5rem;align-items:end;min-width:20.5rem;position:relative}
+.axis{display:flex;flex-direction:column-reverse;justify-content:space-between;align-self:stretch;font-family:var(--mono);font-size:.7rem;color:var(--muted);text-align:right;padding-bottom:2.6rem}
+.col{display:flex;flex-direction:column;gap:.4rem;align-items:stretch;min-width:0}
+.stack{display:flex;flex-direction:column-reverse;gap:3px;border-radius:12px 12px 4px 4px;padding:4px;background:linear-gradient(180deg,#ffffff08,#ffffff03);border:1px dashed var(--line);justify-content:flex-start}
+.person{border-radius:8px;padding:0 .5rem;font-size:.82rem;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:.3rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.person span{overflow:hidden;text-overflow:ellipsis}
+.person.si{background:var(--pink);color:#fff}
+.person.tv{background:transparent;color:var(--sky);border:2px dashed var(--sky)}
+.person.plus{opacity:.75;font-weight:600;font-style:italic}
+.col .lbl{text-align:center;font-family:var(--display);font-size:1.4rem;color:var(--gold);line-height:1}
+.col .cnt{text-align:center;font-family:var(--mono);font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:1rem;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.legend i{display:inline-block;width:.9rem;height:.9rem;border-radius:4px;vertical-align:-2px;margin-right:.35rem}
+
+.alert{border-left:4px solid var(--gold);padding:.3rem 0 .3rem .8rem}
+.names{display:flex;flex-wrap:wrap;gap:.4rem}
+.names span{background:#0e0811;border:1px solid var(--line);border-radius:999px;padding:.3rem .7rem;font-size:.9rem}
+
+.bars{display:flex;flex-direction:column;gap:.45rem}
+.bar{display:grid;grid-template-columns:minmax(0,9.5rem) 1fr 1.6rem;gap:.6rem;align-items:center;font-size:.9rem}
+.bar .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .track{height:12px;background:#0e0811;border-radius:6px;overflow:hidden}
+.bar .fill{height:100%;background:var(--lav);border-radius:6px}
+.bar .v{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+
+.msgs{display:flex;flex-direction:column;gap:.6rem}
+.msg{background:#0e0811;border-radius:14px;padding:.7rem .9rem;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg b{display:block;color:var(--pink);font-size:.85rem;margin-bottom:.2rem}
+
+.table-scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.85rem;min-width:34rem}
+th,td{text-align:left;padding:.45rem .5rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:1.5rem .5rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><p class="eyebrow">Solo para Cami · 7/11 en Feliza</p><h1>Panel del cumple</h1></div>
+    <button class="btn sm" id="refresh" hidden>Actualizar</button>
+  </div>
+
+  <form class="card" id="login">
+    <label for="key"><b>Clave del panel</b></label>
+    <input id="key" type="password" autocomplete="current-password" placeholder="La misma que pusiste en el Apps Script">
+    <p class="err" id="loginErr" hidden></p>
+    <button class="btn" type="submit">Ver respuestas</button>
+    <p class="hint" id="demoHint" hidden>Modo prueba: todavía no pegaste la URL del Apps Script, así que se muestran las respuestas guardadas en este navegador.</p>
+  </form>
+
+  <div id="dash" hidden style="display:flex;flex-direction:column;gap:1rem">
+    <div class="tiles" id="tiles"></div>
+
+    <section class="card">
+      <h2>¿A qué hora llegan?</h2>
+      <div class="legend"><span><i style="background:var(--pink)"></i>Confirmó</span><span><i style="border:2px dashed var(--sky)"></i>Tal vez</span><span><i style="background:var(--pink);opacity:.6"></i>+1 (en cursiva)</span></div>
+      <div class="chart-scroll"><div class="chart" id="chart"></div></div>
+      <p class="alert" id="mesaAlert"></p>
+      <p class="alert" id="freeAlert"></p>
+    </section>
+
+    <section class="card">
+      <h2>No pueden venir</h2>
+      <div class="names" id="noVan"></div>
+    </section>
+
+    <section class="card">
+      <h2>Espacios que les copan</h2>
+      <div class="bars" id="bars"></div>
+    </section>
+
+    <section class="card">
+      <h2>Mensajitos para vos 💌</h2>
+      <div class="msgs" id="msgs"></div>
+    </section>
+
+    <section class="card">
+      <h2>Todas las respuestas</h2>
+      <div class="table-scroll"><table><thead><tr><th>Nombre</th><th>Amigx</th><th>Viene</th><th>Hora</th><th>+1</th><th>Espacios</th><th>Actualizado</th></tr></thead><tbody id="tbody"></tbody></table></div>
+    </section>
+  </div>
+</div>
+
+<script>
+/* ======= CONFIGURACIÓN ======= */
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwCM0oR_pPuv7uKyTEvg_d56Jxg6dza0jUC1BamFH_NvH-hNhv7pcMOJpYbUFbl12cT_g/exec"; // la misma URL /exec que en index.html
+/* ============================ */
+
+const $=s=>document.querySelector(s);
+const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;};
+function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v));}catch(e){return null;}}
+
+if(!SCRIPT_URL){$("#demoHint").hidden=false;$("#key").placeholder="En modo prueba podés dejarla vacía";}
+const saved=store("cumple-cami-key"); if(saved) $("#key").value=saved;
+
+async function load(){
+  const err=$("#loginErr"); err.hidden=true;
+  const key=$("#key").value.trim();
+  let filas;
+  try{
+    if(SCRIPT_URL){
+      if(!key){err.hidden=false;err.textContent="Escribí la clave.";return;}
+      const r=await fetch(SCRIPT_URL+"?key="+encodeURIComponent(key));
+      const j=await r.json();
+      if(!j.ok){err.hidden=false;err.textContent=j.error==="clave incorrecta"?"La clave no coincide con la del Apps Script.":"Error: "+j.error;return;}
+      filas=j.filas; store("cumple-cami-key",key);
+    }else{
+      filas=Object.values(store("cumple-cami-demo")||{});
+    }
+  }catch(e){err.hidden=false;err.textContent="No pude conectarme con la planilla. Revisá la URL del Apps Script y que esté publicada para «Cualquier persona».";return;}
+  render(filas);
+  $("#login").hidden=true; $("#dash").hidden=false; $("#refresh").hidden=false;
+}
+$("#login").addEventListener("submit",e=>{e.preventDefault();load();});
+$("#refresh").addEventListener("click",load);
+
+const SLOTS=["21h","22h","1am"];
+function render(filas){
+  filas=filas.filter(f=>f&&f.nombre).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),"es"));
+  const van=filas.filter(f=>f.asistencia==="si"), tv=filas.filter(f=>f.asistencia==="tal_vez"), no=filas.filter(f=>f.asistencia==="no");
+  const ppl=list=>list.reduce((n,f)=>n+1+(f.acompanante==="si"?1:0),0);
+  const bySlot=s=>filas.filter(f=>f.asistencia!=="no"&&f.horario===s);
+
+  // totales
+  const tiles=$("#tiles"); tiles.textContent="";
+  [["si","Vienen (con +1)",ppl(van)],["tv","Tal vez",ppl(tv)],["","No pueden",no.length],["mesa","En la mesa 21h",ppl(bySlot("21h").filter(f=>f.asistencia==="si"))]]
+    .forEach(([c,k,n])=>{const t=el("div","tile "+c);t.append(el("div","n",n),el("div","k",k));tiles.append(t);});
+
+  // gráfico con nombres
+  const chart=$("#chart"); chart.textContent="";
+  const counts=SLOTS.map(s=>ppl(bySlot(s)));
+  const max=Math.max(4,...counts);
+  const ROW=28; // px por persona
+  SLOTS.forEach((s,i)=>{
+    const col=el("div","col");
+    const st=el("div","stack"); st.style.height=(max*ROW+8)+"px";
+    bySlot(s).sort((a,b)=>(a.asistencia==="si"?0:1)-(b.asistencia==="si"?0:1)).forEach(f=>{
+      const cls=f.asistencia==="si"?"si":"tv";
+      const p=el("div","person "+cls); p.style.height=(ROW-3)+"px"; p.append(el("span",null,f.nombre)); p.title=f.nombre;
+      st.append(p);
+      if(f.acompanante==="si"){
+        const q=el("div","person plus "+cls); q.style.height=(ROW-3)+"px";
+        q.append(el("span",null,(f.acompananteNombre||"+1")+" · de "+String(f.nombre).split(" ")[0])); st.append(q);
+      }
+    });
+    col.append(st, el("div","lbl",s), el("div","cnt",counts[i]+(counts[i]===1?" persona":" personas")));
+    chart.append(col);
+  });
+  const mesa=bySlot("21h"), free=bySlot("1am");
+  $("#mesaAlert").textContent = mesa.length
+    ? "Mesa 21h: "+ppl(mesa)+" personas ("+ppl(mesa.filter(f=>f.asistencia==="si"))+" confirmadas). Recordá que la mesa se sostiene hasta las 22h."
+    : "Todavía nadie eligió llegar a la mesa de las 21h.";
+  $("#freeAlert").textContent = free.length
+    ? "Grupo 1am: "+ppl(free)+" personas para entrar free todxs juntxs. Avisales un punto de encuentro: "+free.map(f=>f.nombre).join(", ")+"."
+    : "Nadie eligió entrar a la 1am por ahora.";
+
+  // no vienen
+  const nv=$("#noVan"); nv.textContent="";
+  if(!no.length) nv.append(el("p","hint","Por ahora nadie dijo que no 🎉"));
+  no.forEach(f=>nv.append(el("span",null,f.nombre)));
+
+  // espacios
+  const cuenta={};
+  filas.filter(f=>f.asistencia!=="no").forEach(f=>String(f.espacios||"").split(",").map(x=>x.trim()).filter(Boolean).forEach(x=>cuenta[x]=(cuenta[x]||0)+1));
+  const ord=Object.entries(cuenta).sort((a,b)=>b[1]-a[1]);
+  const bars=$("#bars"); bars.textContent="";
+  if(!ord.length) bars.append(el("p","hint","Cuando elijan espacios, aparecen acá."));
+  const top=ord.length?ord[0][1]:1;
+  ord.forEach(([k,v])=>{const b=el("div","bar");const tr=el("div","track");const fi=el("div","fill");fi.style.width=(v/top*100)+"%";tr.append(fi);const n=el("span","name",k);n.title=k;b.append(n,tr,el("span","v",v));bars.append(b);});
+
+  // mensajes
+  const ms=$("#msgs"); ms.textContent="";
+  const conMsg=filas.filter(f=>String(f.mensaje||"").trim());
+  if(!conMsg.length) ms.append(el("p","hint","Los mensajes que te dejen van a aparecer acá."));
+  conMsg.forEach(f=>{const m=el("div","msg");m.append(el("b",null,f.nombre),document.createTextNode(f.mensaje));ms.append(m);});
+
+  // tabla
+  const tb=$("#tbody"); tb.textContent="";
+  if(!filas.length){const tr=el("tr");const td=el("td","empty","Todavía no hay respuestas. Compartí la invitación y tocá «Actualizar».");td.colSpan=7;tr.append(td);tb.append(tr);}
+  const lab={si:"Sí",tal_vez:"Tal vez",no:"No"};
+  filas.forEach(f=>{
+    const tr=el("tr");
+    const fecha=f.timestamp?new Date(f.timestamp).toLocaleString("es-AR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"";
+    [f.nombre,f.avatar||"—",lab[f.asistencia]||"",f.horario||"—",f.acompanante==="si"?(f.acompananteNombre||"Sí"):"—",f.espacios||"—",fecha].forEach(v=>tr.append(el("td",null,v)));
+    tb.append(tr);
+  });
+}
+if(!SCRIPT_URL || saved) load();
+</script>
+</body>
+</html>
